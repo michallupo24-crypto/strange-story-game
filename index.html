@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="he">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>הסיפור המוזר – המשחק</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Secular+One&family=Rubik:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: same run-simulation as the solution page — browser window with prompt/alert on one side, the variable boxes on the other, the code underneath. */
+:root{
+  --bg:#FFF6F8; --paper:#FFFFFF; --pink:#FDB4C6; --pink-soft:#FFE4EB; --line:#F3D2DC;
+  --ink:#2E2B33; --muted:#6E6573; --bubble:#37373A; --bubble-fg:#FFFFFF;
+  --violet:#7360F2; --blue:#4F6EF7; --purple:#8C52FF; --mark:#FFD3DF; --mark-fg:#9B1F48;
+  --code-bg:#2F2D33; --code-fg:#F3EEF5; --c-kw:#B9A8FF; --c-str:#FFB3C7; --c-fn:#8FD3FF; --c-com:#958D9B;
+  --f-display:"Secular One","Rubik",system-ui,sans-serif;
+  --f-body:"Rubik",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-code:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#1B191E; --paper:#25222A; --pink:#E98FA9; --pink-soft:#3A2731; --line:#3B3240;
+  --ink:#F5EFF3; --muted:#B5ABB8; --bubble:#F7B9CA; --bubble-fg:#25222A;
+  --violet:#9A8CFF; --blue:#7D95FF; --purple:#B08AFF; --mark:#5A2638; --mark-fg:#FFD3DF; --code-bg:#131116; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#1B191E; --paper:#25222A; --pink:#E98FA9; --pink-soft:#3A2731; --line:#3B3240;
+  --ink:#F5EFF3; --muted:#B5ABB8; --bubble:#F7B9CA; --bubble-fg:#25222A;
+  --violet:#9A8CFF; --blue:#7D95FF; --purple:#B08AFF; --mark:#5A2638; --mark-fg:#FFD3DF; --code-bg:#131116; color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{direction:rtl;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.7}
+.wrap{max-width:1000px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2{font-family:var(--f-display);font-weight:400;line-height:1.15;margin:0}
+:focus-visible{outline:3px solid var(--violet);outline-offset:2px}
+.inline{font-family:var(--f-code);font-size:.85em;background:var(--pink-soft);border-radius:5px;padding:1px 6px;direction:ltr;unicode-bidi:isolate}
+
+.hero{background:var(--pink)}
+.hero .wrap{padding-block:36px 56px}
+.bubble{position:relative;background:var(--bubble);color:var(--bubble-fg);border-radius:38px 46px 42px 34px;padding:22px clamp(22px,4vw,44px) 26px;max-width:720px}
+.bubble::after{content:"";position:absolute;bottom:-32px;right:72px;width:44px;height:46px;background:var(--bubble);clip-path:polygon(0 0,100% 0,30% 100%)}
+.eyebrow{font-size:14px;letter-spacing:.06em;font-weight:500;opacity:.8}
+.hero h1{font-size:clamp(48px,10vw,88px)}
+.hero p{margin:6px 0 0;font-size:18px;opacity:.92}
+
+main{padding-block:40px 64px;display:grid;gap:28px}
+.lead{color:var(--muted);margin:0;max-width:62ch}
+.sim{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:20px;align-items:start}
+.browser{background:var(--paper);border:1px solid var(--line);border-radius:16px;overflow:hidden;min-width:0}
+.browser .top{display:flex;gap:8px;align-items:center;padding:10px 14px;background:var(--pink-soft);direction:ltr}
+.dot{width:11px;height:11px;border-radius:50%;background:var(--line)}
+.url{flex:1;margin-left:8px;background:var(--paper);border-radius:8px;padding:3px 12px;font-family:var(--f-code);font-size:12.5px;color:var(--muted)}
+.stage{padding:24px 18px 28px;min-height:340px;display:grid;place-items:center}
+.dialog{width:100%;max-width:480px;background:var(--paper);border-radius:12px;box-shadow:0 8px 30px #0000002a;padding:18px;border:4px solid var(--blue)}
+.dialog.alert{border-color:var(--purple)}
+.kind{font-family:var(--f-code);font-size:12px;color:var(--muted);direction:ltr;text-align:left;margin-bottom:6px}
+.progress{font-size:13px;color:var(--muted);margin-bottom:6px}
+.dialog .q{display:block;font-size:17px;margin-bottom:10px}
+.dialog input{width:100%;font:inherit;font-size:16px;padding:9px 12px;border:2px solid var(--blue);border-radius:8px;background:var(--paper);color:var(--ink)}
+.btns{display:flex;gap:10px;margin-top:14px;direction:ltr}
+.btn{font:inherit;font-size:15px;border-radius:8px;padding:7px 18px;cursor:pointer;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+.btn.primary{background:#1A73E8;border-color:#1A73E8;color:#fff;font-weight:500}
+.story{font-size:16px;line-height:1.85;white-space:pre-line;max-height:440px;overflow:auto}
+.story b{font-family:var(--f-display);font-weight:400;font-size:19px}
+.story mark{background:var(--mark);color:var(--mark-fg);border-radius:5px;padding:0 5px;font-weight:500}
+.story .null{font-family:var(--f-code);font-size:14px}
+.panel-title{font-size:14px;color:var(--muted);margin-bottom:10px}
+.boxes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.box{background:var(--paper);border:1.5px dashed var(--line);border-radius:12px;padding:8px 12px;min-width:0;transition:border-color .25s,background .25s}
+.box.filled{border-style:solid;border-color:var(--pink);background:var(--pink-soft)}
+.box.active{border-color:var(--blue);border-style:solid}
+.box .vn{font-family:var(--f-code);font-size:12.5px;color:var(--violet);direction:ltr;text-align:left}
+.box .vv{font-weight:500;overflow-wrap:anywhere;min-height:1.6em;font-size:15.5px}
+.box .vv.empty{color:var(--muted)}
+.run{margin-top:16px;font:inherit;font-weight:700;font-size:16px;background:var(--ink);color:var(--bg);border:0;border-radius:999px;padding:10px 22px;cursor:pointer}
+.hint{font-size:14px;color:var(--muted);margin-top:12px}
+details{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:14px 18px}
+summary{cursor:pointer;font-weight:700;color:var(--violet)}
+pre{margin:14px 0 0;background:var(--code-bg);color:var(--code-fg);border-radius:14px;padding:16px 18px;direction:ltr;text-align:left;font-family:var(--f-code);font-size:13.5px;line-height:1.8;overflow-x:auto}
+pre bdi{font-family:var(--f-body);unicode-bidi:isolate}
+.kw{color:var(--c-kw);font-weight:600}.str{color:var(--c-str)}.fn{color:var(--c-fn)}.com{color:var(--c-com);font-style:italic}
+@media (max-width:760px){.sim{grid-template-columns:minmax(0,1fr)}}
+</style>
+
+<style>html,body{margin:0}</style>
+</head>
+<body>
+<header class="hero"><div class="wrap">
+  <div class="bubble">
+    <div class="eyebrow">פרויקט · דמו להרצה</div>
+    <h1>הסיפור המוזר</h1>
+    <p>עני על השאלות בלי לדעת למה, ותראי מה יוצא.</p>
+  </div>
+</div></header>
+
+<main class="wrap">
+  <p class="lead">ככה הפרויקט נראה כשמריצים אותו: כל <span class="inline">prompt</span> שואל שאלה וממלא קופסה, ובסוף <span class="inline">alert</span> מקפיץ את הסיפור.</p>
+  <div class="sim">
+    <div class="browser">
+      <div class="top"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">index.html</span></div>
+      <div class="stage" id="stage"></div>
+    </div>
+    <div>
+      <div class="panel-title">המשתנים (הקופסאות)</div>
+      <div class="boxes" id="boxes"></div>
+      <button class="run" id="run" type="button">הריצי את הקוד ▶</button>
+      <p class="hint">טיפ: כמה שהתשובות יותר מוזרות, הסיפור יותר מצחיק.</p>
+    </div>
+  </div>
+  <details>
+    <summary>הקוד שמאחורי המשחק</summary>
+    <pre id="code"></pre>
+  </details>
+</main>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  const Q = [
+    { v:"city",    q:"הכניסי שם של עיר",                         ex:"חדרה" },
+    { v:"animal",  q:"הכניסי שם של חיה",                         ex:"לאמה" },
+    { v:"food",    q:"הכניסי מאכל שאת הכי אוהבת",                ex:"שניצל" },
+    { v:"number",  q:"הכניסי מספר ענקי",                         ex:"3,000" },
+    { v:"action",  q:"הכניסי פעולה (למשל: לרקוד, לבכות, לשיר)",   ex:"לרקוד ברייקדאנס" },
+    { v:"teacher", q:"הכניסי שם של מורה",                        ex:"המורה רינה" },
+    { v:"sound",   q:"הכניסי צליל או קריאה מצחיקה",              ex:"אוּאוּאוּאוּאוּ" }
+  ];
+  // the story — a breaking-news report; uses most boxes more than once
+  function story(a, m){
+    return "<b>🚨 מבזק חדשות 🚨</b>\n" +
+      m(a.animal) + " ענק השתלט הבוקר על " + m(a.city) + ".\n" +
+      "הוא אכל " + m(a.number) + " מנות " + m(a.food) + ", ואז התחיל " + m(a.action) + " באמצע הכביש.\n\n" +
+      "שום דבר לא עזר, עד ש" + m(a.teacher) + " הגיעה ואמרה: \"אני מחכה שיהיה שקט.\"\n" +
+      "ה" + m(a.animal) + " התיישב מיד.\n\n" +
+      "עדי ראייה: \"" + m(a.sound) + "!!!\"";
+  }
+
+  const stage = $("stage"), boxesEl = $("boxes");
+  let vals = {}, i = 0;
+  function renderBoxes(active){
+    boxesEl.innerHTML = Q.map((x,k) => {
+      const has = Object.prototype.hasOwnProperty.call(vals, x.v), v = vals[x.v];
+      const shown = !has ? "?" : v === null ? "null" : '"' + esc(v) + '"';
+      return '<div class="box' + (has ? " filled" : "") + (k === active ? " active" : "") + '"><div class="vn">' + x.v + '</div><div class="vv' + (has ? "" : " empty") + '">' + shown + '</div></div>';
+    }).join("");
+  }
+  const mk = v => v === null ? '<mark class="null">null</mark>' : '<mark>' + esc(v) + '</mark>';
+  function showPrompt(){
+    const x = Q[i];
+    stage.innerHTML = '<form class="dialog" id="pf"><div class="kind">prompt()</div><div class="progress">שאלה ' + (i+1) + ' מתוך ' + Q.length + '</div>' +
+      '<label class="q" for="ans">' + esc(x.q) + '</label><input id="ans" autocomplete="off" placeholder="' + esc(x.ex) + '">' +
+      '<div class="btns"><button class="btn primary" type="submit">OK</button><button class="btn" type="button" id="cancel">Cancel</button></div></form>';
+    renderBoxes(i);
+    const inp = $("ans"); try { inp.focus({ preventScroll:true }); } catch(e){}
+    $("pf").addEventListener("submit", e => { e.preventDefault(); next(inp.value.trim() || x.ex); });
+    $("cancel").addEventListener("click", () => next(null));
+  }
+  function next(v){ vals[Q[i].v] = v; i++; i < Q.length ? showPrompt() : showAlert(); }
+  function showAlert(){
+    renderBoxes(-1);
+    stage.innerHTML = '<div class="dialog alert"><div class="kind">alert(story)</div><div class="story">' + story(vals, mk) + '</div><div class="btns"><button class="btn primary" type="button" id="ok">OK</button></div></div>';
+    $("ok").addEventListener("click", start);
+  }
+  function start(){ vals = {}; i = 0; showPrompt(); }
+  $("run").addEventListener("click", start);
+
+  // code view
+  const heb = /[֐-׿]/;
+  function hl(src){
+    const e = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const re = /(\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*")|\b(var)\b|\b(prompt|alert)\b/g;
+    let out = "", last = 0, m;
+    while((m = re.exec(src))){
+      out += e(src.slice(last, m.index)); const t = m[0];
+      if(m[1]) out += '<span class="com">//' + (heb.test(t) ? '<bdi dir="rtl">' + e(t.slice(2)) + '</bdi>' : e(t.slice(2))) + '</span>';
+      else if(m[2]) out += '<span class="str">' + (heb.test(t) ? '<bdi dir="rtl">' + e(t) + '</bdi>' : e(t)) + '</span>';
+      else if(m[3]) out += '<span class="kw">' + t + '</span>';
+      else out += '<span class="fn">' + t + '</span>';
+      last = m.index + t.length;
+    }
+    return out + e(src.slice(last));
+  }
+  const pad = Math.max(...Q.map(x => x.v.length));
+  const src = "// קלט: כל תשובה נכנסת לקופסה משלה\n" +
+    Q.map(x => "var " + x.v.padEnd(pad) + ' = prompt("' + x.q + '");').join("\n") +
+    "\n\n// מדביקות טקסט + קופסאות\n" +
+    'var story = "מבזק חדשות\\n" +\n' +
+    '  animal + " ענק השתלט הבוקר על " + city + ".\\n" +\n' +
+    '  "הוא אכל " + number + " מנות " + food + ", " +\n' +
+    '  "ואז התחיל " + action + " באמצע הכביש.\\n\\n" +\n' +
+    '  "שום דבר לא עזר, עד ש" + teacher + " הגיעה ואמרה: " +\n' +
+    '  "\\"אני מחכה שיהיה שקט.\\"\\n" +\n' +
+    '  "ה" + animal + " התיישב מיד.\\n\\n" +\n' +
+    '  "עדי ראייה: \\"" + sound + "!!!\\"";\n\n' +
+    "// פלט: מקפיצות את הסיפור\nalert(story);";
+  $("code").innerHTML = hl(src);
+
+  // open in a finished example state
+  Q.forEach(x => vals[x.v] = x.ex);
+  showAlert();
+})();
+</script>
+
+</body>
+</html>
